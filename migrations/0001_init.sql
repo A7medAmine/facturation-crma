@@ -274,8 +274,15 @@ alter table public.invoices      enable row level security;
 alter table public.invoice_lines enable row level security;
 alter table public.counters      enable row level security;
 
+-- `create policy` has no `if not exists` form, so each one is dropped first.
+-- Without this, replaying 0001 against a schema that already carries the
+-- policies (a fresh project seeded by hand, or schema_migrations cleared)
+-- aborted the file with `policy "full_access" for table "profiles" already
+-- exists` — and because the runner wraps each file in a transaction, the
+-- whole migration rolled back and the app could never connect.
 do $$ declare t text; begin
   foreach t in array array['profiles', 'settings', 'units', 'clients', 'invoices', 'invoice_lines'] loop
+    execute format('drop policy if exists "full_access" on public.%I', t);
     execute format(
       'create policy "full_access" on public.%I for all using (true) with check (true)',
       t
@@ -283,6 +290,7 @@ do $$ declare t text; begin
   end loop;
   -- counters: readable by clients (number preview), writeable only by the
   -- security-definer trigger / reserve function.
+  execute 'drop policy if exists "counters_read" on public.counters';
   execute 'create policy "counters_read" on public.counters for select using (true)';
 end $$;
 
