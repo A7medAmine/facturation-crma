@@ -148,7 +148,7 @@ async function createWindow() {
       ? url.startsWith('http://localhost:3000')
       : url.startsWith('http://127.0.0.1');
     if (!allowed) {
-      try { shell.openExternal(url); } catch {}
+      try { shell.openExternal(url); } catch { /* best effort */ }
     }
     return { action: allowed ? 'allow' : 'deny' };
   });
