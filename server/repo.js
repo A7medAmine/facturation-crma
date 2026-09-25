@@ -251,15 +251,16 @@ export function peekNextNumber(year) {
 }
 
 /**
- * Next number for every calendar year that already holds at least one invoice,
- * sorted oldest year first. Years without invoices are omitted.
+ * Next number for every year the app can issue into, sorted oldest year first:
+ * the current year plus any year that already holds an invoice or a counter.
+ * The current year is always included so a fresh install — empty template, no
+ * invoices, no counter rows — shows `0001/<year>` instead of an empty list.
  */
 export function listNextNumbers() {
-  const years = db
-    .prepare('SELECT DISTINCT year FROM invoices ORDER BY year ASC')
-    .all()
-    .map((row) => row.year);
-  return years.map((year) => peekNextNumber(year));
+  const years = new Set([new Date().getFullYear()]);
+  for (const row of db.prepare('SELECT DISTINCT year FROM invoices').all()) years.add(row.year);
+  for (const row of db.prepare('SELECT year FROM counters').all()) years.add(row.year);
+  return [...years].sort((a, b) => a - b).map((year) => peekNextNumber(year));
 }
 
 /** Move the counter for a year. Refuses to rewind onto numbers already issued. */
