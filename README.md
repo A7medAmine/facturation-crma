@@ -25,7 +25,7 @@ Desktop : application Electron (Windows, macOS, Linux). Web : front-end React/Vi
 ```
 electron/           Processus principal Electron (fenêtre, menu, serveur intégré)
 server/             API Express + base de données (db.js, repo.js, api.js)
-  default.db        Base SQLite par défaut (données initiales de l'application)
+  default.db        Base SQLite modèle (schéma seul, aucune donnée)
 shared/             Logique partagée front/back (calculs monétaires)
 src/                Application React (pages, composants, styles)
 data/               Base de développement (data/lfb.db) + backups automatiques
@@ -34,9 +34,10 @@ logo.png            Icône de l'application
 
 ## Base de données
 
-- **Développement** : `data/lfb.db` (dans le dépôt)
+- **Développement** : `data/lfb.db` (données locales, non versionnées)
 - **Application installée** : `%APPDATA%/Facturation/data/lfb.db` (chemin utilisateur standard, défini via `LFB_DATA_DIR`)
-- **Premier lancement** : si aucune base n'existe, l'application copie `server/default.db` (les données actuelles du développement) puis applique le schéma et les migrations.
+- **Premier lancement** : si aucune base n'existe, l'application copie `server/default.db` (un modèle vide : schéma seul, aucune entreprise, aucun logo, aucune unité de production, aucun client, aucune facture) puis applique le schéma et les migrations. La numérotation démarre à 1 pour chaque année.
+- **Génération du modèle** : `npm run db:reset-default` (exécuté automatiquement par `npm run electron:build`) crée `server/default.db` s'il est absent et le vide de toute donnée sinon.
 
 Schéma : `units`, `clients`, `invoices`, `invoice_lines`, `counters`, `settings`.
 

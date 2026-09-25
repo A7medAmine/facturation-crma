@@ -12,6 +12,24 @@ export class ApiError extends Error {
 const nowIso = () => new Date().toISOString();
 
 /* ------------------------------------------------------------------ */
+/* Sync bookkeeping — local edits mark rows dirty; hard deletes leave  */
+/* a tombstone so the cloud soft-delete can be applied later.          */
+/* ------------------------------------------------------------------ */
+
+const insertTombstone = db.prepare(
+  `INSERT INTO sync_tombstones (entity, local_id, cloud_id, deleted_at)
+   VALUES (?, ?, ?, ?)
+   ON CONFLICT(entity, local_id) DO UPDATE SET deleted_at = excluded.deleted_at`
+);
+
+function markDeleted(entity, localId) {
+  const cloudId = db
+    .prepare(`SELECT cloud_id FROM ${entity} WHERE id = ?`)
+    .get(localId)?.cloud_id ?? null;
+  insertTombstone.run(entity, localId, cloudId, nowIso());
+}
+
+/* ------------------------------------------------------------------ */
 /* Units                                                               */
 /* ------------------------------------------------------------------ */
 
@@ -60,7 +78,7 @@ export function createUnit(payload) {
   const address = String(payload?.address ?? '').trim().slice(0, 200);
   const ts = nowIso();
   const info = db
-    .prepare('INSERT INTO units (name, address, created_at, updated_at) VALUES (?, ?, ?, ?)')
+    .prepare('INSERT INTO units (name, address, created_at, updated_at, sync_dirty) VALUES (?, ?, ?, ?, 1)')
     .run(name, address, ts, ts);
   return getUnit(info.lastInsertRowid);
 }
@@ -70,7 +88,7 @@ export function updateUnit(id, payload) {
   const name = requireText(payload?.name, 'nom de l’unité');
   const address = String(payload?.address ?? '').trim().slice(0, 200);
   const archived = payload?.archived ? 1 : 0;
-  db.prepare('UPDATE units SET name = ?, address = ?, archived = ?, updated_at = ? WHERE id = ?')
+  db.prepare('UPDATE units SET name = ?, address = ?, archived = ?, updated_at = ?, sync_dirty = 1 WHERE id = ?')
     .run(name, address, archived, nowIso(), id);
   return getUnit(id);
 }
@@ -86,6 +104,7 @@ export function deleteUnit(id) {
       `« ${unit.name} » porte ${count} facture${count > 1 ? 's' : ''}. Archivez l’unité pour la retirer de la liste sans toucher à ses factures.`
     );
   }
+  markDeleted('units', id);
   db.prepare('DELETE FROM units WHERE id = ?').run(id);
   return { id };
 }
@@ -155,8 +174,8 @@ export function createClient(payload) {
 
   const info = db
     .prepare(
-      `INSERT INTO clients (name, type, location, nif, art, phone, email, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+      `INSERT INTO clients (name, type, location, nif, art, phone, email, created_at, updated_at, sync_dirty)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
     )
     .run(name, type, location, nif, art, phone, email, ts, ts);
 
@@ -176,7 +195,7 @@ export function updateClient(id, payload) {
 
   db.prepare(
     `UPDATE clients
-        SET name = ?, type = ?, location = ?, nif = ?, art = ?, phone = ?, email = ?, archived = ?, updated_at = ?
+        SET name = ?, type = ?, location = ?, nif = ?, art = ?, phone = ?, email = ?, archived = ?, updated_at = ?, sync_dirty = 1
       WHERE id = ?`
   ).run(name, type, location, nif, art, phone, email, archived, nowIso(), id);
 
@@ -194,6 +213,7 @@ export function deleteClient(id) {
       `« ${client.name} » porte ${count} facture${count > 1 ? 's' : ''}. Archivez le client pour le masquer de la liste.`
     );
   }
+  markDeleted('clients', id);
   db.prepare('DELETE FROM clients WHERE id = ?').run(id);
   return { id };
 }
@@ -230,6 +250,19 @@ export function peekNextNumber(year) {
   return { year, seq, number: formatNumber(seq, getSettings().billing.numberPadding) };
 }
 
+/**
+ * Next number for every year the app can issue into, sorted oldest year first:
+ * the current year plus any year that already holds an invoice or a counter.
+ * The current year is always included so a fresh install — empty template, no
+ * invoices, no counter rows — shows `0001/<year>` instead of an empty list.
+ */
+export function listNextNumbers() {
+  const years = new Set([new Date().getFullYear()]);
+  for (const row of db.prepare('SELECT DISTINCT year FROM invoices').all()) years.add(row.year);
+  for (const row of db.prepare('SELECT year FROM counters').all()) years.add(row.year);
+  return [...years].sort((a, b) => a - b).map((year) => peekNextNumber(year));
+}
+
 /** Move the counter for a year. Refuses to rewind onto numbers already issued. */
 export function setNextSeq(year, nextSeq) {
   const y = Number(year);
@@ -248,10 +281,15 @@ export function setNextSeq(year, nextSeq) {
       `Le numéro ${formatNumber(value)} est déjà utilisé en ${y}. Le plus petit numéro disponible est ${formatNumber(floor)}.`
     );
   }
-  db.prepare(
-    `INSERT INTO counters (year, next_seq) VALUES (?, ?)
-     ON CONFLICT(year) DO UPDATE SET next_seq = excluded.next_seq`
-  ).run(y, value);
+  db.transaction(() => {
+    db.prepare(
+      `INSERT INTO counters (year, next_seq, sync_dirty) VALUES (?, ?, 1)
+       ON CONFLICT(year) DO UPDATE SET next_seq = excluded.next_seq, sync_dirty = 1`
+    ).run(y, value);
+    // Drop any block reserved from the cloud: it starts at the old position,
+    // so keeping it would drag the numbering straight back where it was.
+    db.prepare('DELETE FROM seq_batches WHERE year = ?').run(y);
+  })();
   return peekNextNumber(y);
 }
 
@@ -477,8 +515,8 @@ export const createInvoice = db.transaction((payload) => {
       `INSERT INTO invoices
          (unit_id, client_id, client_name, client_type, client_location, client_nif, client_art, client_phone,
           seq, number, year, date, notes, tva_rate, page_orientation,
-          total_nette, total_tva, total_fga, total_timbre, total_amount, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          total_nette, total_tva, total_fga, total_timbre, total_amount, created_at, updated_at, sync_dirty)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)`
     )
     .run(
       header.unitId, header.clientId, header.clientName, header.clientType, header.clientLocation, header.clientNif, header.clientArt, header.clientPhone,
@@ -515,7 +553,7 @@ export const updateInvoice = db.transaction((id, payload) => {
         SET unit_id = ?, client_id = ?, client_name = ?, client_type = ?, client_location = ?, client_nif = ?, client_art = ?, client_phone = ?,
             date = ?, notes = ?, page_orientation = ?,
             total_nette = ?, total_tva = ?, total_fga = ?, total_timbre = ?, total_amount = ?,
-            updated_at = ?
+            updated_at = ?, sync_dirty = 1
       WHERE id = ?`
   ).run(
     header.unitId, header.clientId, header.clientName, header.clientType, header.clientLocation, header.clientNif, header.clientArt, header.clientPhone,
@@ -550,8 +588,98 @@ export function duplicateInvoice(id) {
 
 export function deleteInvoice(id) {
   getInvoice(id);
+  markDeleted('invoices', id);
   db.prepare('DELETE FROM invoices WHERE id = ?').run(id);
   return { id: Number(id) };
+}
+
+/* ------------------------------------------------------------------ */
+/* Yearly statistics                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Statistics for a single calendar year, computed exclusively from that
+ * year's invoices. Service types are never hardcoded: they are the distinct
+ * observations actually written on the year's invoice lines, so a service
+ * only appears once at least one invoice of the selected year uses it.
+ * Amounts are broken down per service by summing each line's computed total
+ * (nette + TVA + FGA + timbre); an invoice spanning several services
+ * contributes to each of them.
+ */
+export function getYearlyStats(year, unitId) {
+  const y = Number(year);
+  if (!Number.isInteger(y) || y < 2000 || y > 2100) {
+    throw new ApiError(400, 'Année invalide.');
+  }
+
+  const where = ['i.year = ?'];
+  const params = [y];
+  if (unitId !== undefined && unitId !== null && unitId !== '') {
+    where.push('i.unit_id = ?');
+    params.push(Number(unitId));
+  }
+
+  const invoices = db
+    .prepare(
+      `SELECT i.id, i.tva_rate, i.total_amount
+         FROM invoices i
+        WHERE ${where.join(' AND ')}`
+    )
+    .all(params);
+
+  const totalInvoices = invoices.length;
+  const totalAmount = round2(invoices.reduce((sum, inv) => sum + inv.total_amount, 0));
+
+  // Group the year's lines by their observation text.
+  const byObservation = new Map();
+  if (invoices.length > 0) {
+    const ids = invoices.map((inv) => inv.id);
+    const tvaByInvoice = new Map(invoices.map((inv) => [inv.id, inv.tva_rate]));
+    const lines = db
+      .prepare(
+        `SELECT invoice_id, nette, fga, timbre, obs
+           FROM invoice_lines
+          WHERE invoice_id IN (${ids.map(() => '?').join(',')})`
+      )
+      .all(...ids);
+    for (const line of lines) {
+      const obs = String(line.obs ?? '').trim();
+      const group = byObservation.get(obs) ?? { ids: new Set(), amount: 0 };
+      group.ids.add(line.invoice_id);
+      const tvaRate = tvaByInvoice.get(line.invoice_id) ?? 0;
+      group.amount += computeLine(line, tvaRate).total;
+      byObservation.set(obs, group);
+    }
+  }
+
+  const services = [...byObservation.entries()]
+    .map(([obs, group], index) => ({
+      key: `service-${index}`,
+      label: obs || null,
+      invoiceCount: group.ids.size,
+      totalAmount: round2(group.amount),
+    }))
+    .sort((a, b) => b.totalAmount - a.totalAmount || (a.label ?? '').localeCompare(b.label ?? ''));
+
+  // Years worth selecting: every year present in the data, plus the current
+  // and next calendar year so the operator can look ahead even when empty.
+  const availableYears = db
+    .prepare('SELECT DISTINCT year FROM invoices ORDER BY year ASC')
+    .all()
+    .map((row) => row.year);
+  const now = new Date().getFullYear();
+  for (const candidate of [now, now + 1]) {
+    if (!availableYears.includes(candidate)) availableYears.push(candidate);
+  }
+  availableYears.sort((a, b) => a - b);
+
+  return {
+    year: y,
+    years: availableYears,
+    totalInvoices,
+    totalAmount,
+    services,
+  };
 }
 
 /* ------------------------------------------------------------------ */

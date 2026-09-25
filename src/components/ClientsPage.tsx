@@ -1,13 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import { Archive, ArchiveRestore, Building2, FileText, Mail, MapPin, Phone, Plus, Search, Trash2, User, Users } from 'lucide-react';
-import type { Client, ClientType, Language } from '../types';
+import type { Client, ClientType } from '../types';
 import type { Dictionary } from '../lib/i18n';
 import { money } from '../lib/format';
 import { Button, cx, EmptyState, inputClass, Panel } from './ui';
 
 interface ClientsPageProps {
   clients: Client[];
-  lang: Language;
   t: Dictionary;
   onAddClient: () => void;
   onEditClient: (client: Client) => void;
@@ -154,7 +153,7 @@ export function ClientsPage({
                 onChange={(e) => setShowArchived(e.target.checked)}
                 className="rounded border-rule text-pine focus:ring-pine"
               />
-              <span>{t.archived}</span>
+              <span>{t.clientArchived}</span>
             </label>
           </div>
         </div>
@@ -215,7 +214,7 @@ export function ClientsPage({
 
                     {client.archived && (
                       <span className="rounded bg-seal-tint px-2 py-0.5 text-[10px] font-semibold text-seal">
-                        {t.archived}
+                        {t.clientArchived}
                       </span>
                     )}
                   </div>
@@ -270,7 +269,7 @@ export function ClientsPage({
                   >
                     <FileText className="h-3.5 w-3.5" />
                     <span>
-                      {client.invoiceCount || 0} {t.ledger.toLowerCase()} ({money(client.totalBilled || 0)})
+                      {t.invoicesCount(client.invoiceCount || 0)} ({money(client.totalBilled || 0)})
                     </span>
                   </button>
 

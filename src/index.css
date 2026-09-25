@@ -29,8 +29,6 @@
   --font-narrow: "Archivo Narrow", "Archivo", system-ui, sans-serif;
   --font-doc: "Source Serif 4", Georgia, serif;
   --font-mono: "IBM Plex Mono", ui-monospace, monospace;
-  --font-arabic: "Cairo", system-ui, sans-serif;
-  --font-arabic-doc: "Noto Naskh Arabic", "Cairo", serif;
 }
 
 @layer base {
@@ -43,11 +41,6 @@
     background-color: var(--color-desk);
     color: var(--color-ink);
     font-family: var(--font-display);
-  }
-
-  /* Arabic swaps the whole UI face; the document keeps its own Naskh. */
-  [dir="rtl"] body {
-    font-family: var(--font-arabic);
   }
 
   /* One visible focus treatment for every interactive element. */
