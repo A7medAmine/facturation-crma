@@ -13,7 +13,7 @@ interface InvoiceDocumentProps {
 }
 
 /**
- * The A4 sheet. It sets its own type â€” Source Serif â€” so the document reads
+ * The A4 sheet. It sets its own type — Source Serif — so the document reads
  * as a printed record rather than as part of the tool that produced it.
  */
 export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) {
@@ -65,7 +65,7 @@ export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) 
               {(company.tel || company.fax) && (
                 <div className="tnum pt-0.5">
                   {company.tel && `${t.tel} ${company.tel}`}
-                  {company.tel && company.fax && ' Â· '}
+                  {company.tel && company.fax && ' · '}
                   {company.fax && `${t.fax} ${company.fax}`}
                 </div>
               )}
@@ -98,7 +98,7 @@ export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) 
               <p className="text-xs text-slate">{invoice.clientLocation}</p>
             )}
             {invoice.clientPhone && (
-              <p className="text-xs text-slate">TÃ©l : {invoice.clientPhone}</p>
+              <p className="text-xs text-slate">Tél : {invoice.clientPhone}</p>
             )}
             {invoice.clientType === 'company' && (invoice.clientNif || invoice.clientArt) && (
               <div className="mt-1 space-y-0.5 font-mono text-[10px] text-slate">
@@ -164,10 +164,10 @@ export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) 
             <tr key={line.id}>
               <td className="border border-rule px-2 py-1.5 text-center font-mono tnum text-slate">{index + 1}</td>
               <td className="border border-rule px-2 py-1.5 font-mono font-semibold text-left">
-                {line.police || 'â€”'}
+                {line.police || '—'}
               </td>
               <td className="border border-rule px-2 py-1.5 font-mono tnum text-slate text-left">
-                {line.echeance ? longDate(line.echeance) : 'â€”'}
+                {line.echeance ? longDate(line.echeance) : '—'}
               </td>
               <td className="border border-rule px-2 py-1.5 font-mono tnum text-right">
                 {money(line.nette, currency)}
@@ -176,7 +176,7 @@ export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) 
                 {money(line.tva, currency)}
                 {isVatExemptLine(line) && (
                   <span className="block text-[8px] text-slate font-sans italic font-normal">
-                    ExonÃ©rÃ©
+                    Exonéré
                   </span>
                 )}
               </td>
@@ -190,7 +190,7 @@ export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) 
                 {money(line.total, currency)}
               </td>
               <td className="border border-rule px-2 py-1.5 italic text-slate text-left">
-                {line.obs || 'â€”'}
+                {line.obs || '—'}
               </td>
             </tr>
           ))}
@@ -224,12 +224,12 @@ export function InvoiceDocument({ invoice, settings, t }: InvoiceDocumentProps) 
         <p className="font-display text-[9px] font-bold uppercase tracking-[0.14em] text-pine">
           {t.amountInWords}
         </p>
-        <p className="mt-1 text-[13px] font-semibold leading-relaxed">Â« {spelled} Â»</p>
+        <p className="mt-1 text-[13px] font-semibold leading-relaxed">« {spelled} »</p>
       </div>
 
-      {/* ---------------- Signature ---------------- */}
+      {/* ---------------- Issuer ---------------- */}
       <div className="avoid-break mt-6 flex justify-end">
-        <p className="font-display text-xs font-bold text-pine text-right">{t.signature}</p>
+        <p className="font-display text-xs font-bold text-pine text-right">P / {company.name}</p>
       </div>
     </article>
   );

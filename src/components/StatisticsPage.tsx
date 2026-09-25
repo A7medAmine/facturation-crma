@@ -60,7 +60,7 @@ function Donut({
   let offset = 0;
 
   return (
-    <svg viewBox={`0 0 ${size} ${size}`} className="h-56 w-56 sm:h-64 sm:w-64" role="img" aria-label="Donut">
+    <svg viewBox={`0 0 ${size} ${size}`} className="h-56 w-56 sm:h-64 sm:w-64" role="img" aria-label="Graphique en anneau">
       {total === 0 ? (
         <circle cx={centre} cy={centre} r={radius} fill="none" stroke="#e6eaec" strokeWidth={stroke} />
       ) : (

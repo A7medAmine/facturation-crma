@@ -226,7 +226,7 @@ export function InvoiceEditor({
   }
   const [csvPreview, setCsvPreview] = useState<CsvRow[] | null>(null);
 
-  const csvTemplate = `Police,Ã‰chÃ©ance,Nette,FGA,Timbre,Observations\n10/2026,2026-01-15,12500.00,2500.00,40,Assurance incendie\n11/2026,2026-02-15,8300.50,1660.00,40,Assurance tous risques`;
+  const csvTemplate = `Police,Échéance,Nette,FGA,Timbre,Observations\n10/2026,2026-01-15,12500.00,2500.00,40,Assurance incendie\n11/2026,2026-02-15,8300.50,1660.00,40,Assurance tous risques`;
 
   function parseDate(raw: string): string {
     const s = raw.trim();
@@ -419,10 +419,10 @@ export function InvoiceEditor({
                             </div>
                             {(c.location || c.nif || c.phone || c.art) && (
                               <div className="text-[11px] text-slate flex flex-wrap gap-x-3 gap-y-0.5">
-                                {c.location && <span>ðŸ“ {c.location}</span>}
-                                {c.phone && <span>ðŸ“ž {c.phone}</span>}
+                                {c.location && <span>📍 {c.location}</span>}
+                                {c.phone && <span>📞 {c.phone}</span>}
                                 {c.nif && <span>NIF: {c.nif}</span>}
-                                {c.art && <span>NÂ°Art: {c.art}</span>}
+                                {c.art && <span>N°Art: {c.art}</span>}
                               </div>
                             )}
                           </button>
@@ -583,7 +583,7 @@ export function InvoiceEditor({
                         {money(computed[index].tva, currency)}
                         {isVatExemptLine(line) && (
                           <span className="block text-[10px] text-pine font-sans italic font-normal">
-                            ExonÃ©rÃ©
+                            Exonéré
                           </span>
                         )}
                       </td>
@@ -664,7 +664,7 @@ export function InvoiceEditor({
             </div>
           </div>
 
-          {/* Amount in words â€” a live preview of the legal sentence on the sheet */}
+          {/* Amount in words — a live preview of the legal sentence on the sheet */}
           <div className="rounded-md border border-rule bg-desk/40 px-4 py-3.5">
             <p className="font-narrow text-[10px] font-semibold uppercase tracking-[0.12em] text-slate">
               {t.amountInWords}
@@ -731,8 +731,8 @@ export function InvoiceEditor({
                   >
                     {row.valid ? t.csvValid : t.csvInvalid}
                   </span>
-                  <span className="min-w-[6rem] truncate font-mono">{row.police || 'â€”'}</span>
-                  <span className="font-mono tnum text-slate">{row.echeance || 'â€”'}</span>
+                  <span className="min-w-[6rem] truncate font-mono">{row.police || '—'}</span>
+                  <span className="font-mono tnum text-slate">{row.echeance || '—'}</span>
                   <span className="ml-auto font-mono tnum font-semibold">
                     {money(row.nette + row.fga + row.timbre, currency)}
                   </span>
@@ -743,14 +743,14 @@ export function InvoiceEditor({
           {csvPreview && (
             <div className="mt-2 flex gap-3 text-xs text-mute">
               <span>{t.csvRowTotal(csvPreview.length)}</span>
-              <span className="text-pine">Â· {t.csvValidCount(csvPreview.filter((r) => r.valid).length)}</span>
+              <span className="text-pine">· {t.csvValidCount(csvPreview.filter((r) => r.valid).length)}</span>
             </div>
           )}
         </Modal>
 
         <footer className="flex flex-wrap items-center justify-between gap-3 border-t border-rule bg-desk/50 px-5 py-4">
           <p className="text-xs text-slate">
-            {selectedUnit ? `${selectedUnit.name}${selectedUnit.address ? ` â€” ${selectedUnit.address}` : ''}` : ''}
+            {selectedUnit ? `${selectedUnit.name}${selectedUnit.address ? ` — ${selectedUnit.address}` : ''}` : ''}
           </p>
           <div className="flex items-center gap-2">
             <Button type="button" variant="ghost" icon={X} onClick={onCancel} disabled={saving}>

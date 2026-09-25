@@ -81,7 +81,7 @@ export function ClientModal({
         archived: client?.archived || false,
       });
     } catch (err: any) {
-      setError(err?.message || 'Erreur lors de l’enregistrement');
+      setError(err?.message || 'Erreur lors de l’enregistrement.');
     }
   };
 

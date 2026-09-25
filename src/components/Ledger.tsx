@@ -27,8 +27,8 @@ interface LedgerProps {
 function StatStrip({ stats, settings, t }: Pick<LedgerProps, 'stats' | 'settings' | 't'>) {
   const currency = settings.billing.currency;
   const readings = [
-    { label: t.statInvoices, value: stats ? String(stats.count) : 'â€”', mono: true },
-    { label: t.statBilled, value: stats ? money(stats.billed, currency) : 'â€”', mono: true },
+    { label: t.statInvoices, value: stats ? String(stats.count) : '—', mono: true },
+    { label: t.statBilled, value: stats ? money(stats.billed, currency) : '—', mono: true },
   ];
 
   return (
@@ -199,10 +199,10 @@ export function Ledger({
                       </td>
                     )}
                     <td className="max-w-[12rem] truncate px-4 py-3 text-ink font-semibold text-left">
-                      {invoice.clientName || 'â€”'}
+                      {invoice.clientName || '—'}
                     </td>
                     <td className="max-w-[14rem] truncate px-4 py-3 font-mono text-xs text-slate text-left">
-                      {invoice.policies || 'â€”'}
+                      {invoice.policies || '—'}
                     </td>
                     <td className="px-4 py-3 font-mono tnum text-slate text-right">
                       {invoice.lineCount}

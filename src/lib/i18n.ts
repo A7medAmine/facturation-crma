@@ -21,7 +21,7 @@ const fr = {
   clientNameLabel: 'Nom / Raison sociale',
   clientLocationLabel: 'Localisation / Adresse',
   locationHint: 'ex. Wilaya de Bouira, Lakhdaria',
-  clientNifLabel: 'NIF (N° Ident. Fiscale)',
+  clientNifLabel: 'NIF (n° d’ident. fiscale)',
   clientArtLabel: 'N° Article (N/ART)',
   phone: 'Téléphone',
   email: 'Email',
@@ -35,6 +35,7 @@ const fr = {
   confirmDeleteClientBody: (name: string) => `« ${name} » sera retiré de la liste des clients.`,
   archiveClient: 'Archiver',
   restoreClient: 'Réactiver',
+  clientArchived: 'Archivé',
   allClients: 'Tous les clients',
 
   // Units
@@ -71,7 +72,7 @@ const fr = {
   noInvoices: 'Aucune facture pour le moment.',
   noInvoicesHint: 'Créez la première facture de cette unité.',
   noResults: 'Aucune facture ne correspond à cette recherche.',
-  noResultsHint: 'Essayez un autre numéro ou numéro de police.',
+  noResultsHint: 'Essayez un autre numéro ou un numéro de police.',
   clearSearch: 'Effacer la recherche',
   invoicesCount: (n: number) => `${n} facture${n > 1 ? 's' : ''}`,
 
@@ -111,7 +112,7 @@ const fr = {
   addLine: 'Ajouter une ligne',
   removeLine: 'Retirer la ligne',
   grandTotal: 'Total général',
-  amountInWords: 'Arrêté la présente facture à la somme de',
+  amountInWords: 'La présente facture est arrêtée à la somme de',
   save: 'Enregistrer',
   saving: 'Enregistrement…',
   cancel: 'Annuler',

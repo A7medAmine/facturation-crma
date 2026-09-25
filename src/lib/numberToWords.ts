@@ -1,6 +1,6 @@
 /**
- * Spells monetary amounts for the "Arrêté la présente facture à la somme de"
- * line, in French, for Algerian dinars and centimes.
+ * Spells monetary amounts for the "La présente facture est arrêtée à la somme
+ * de" line, in French, for Algerian dinars and centimes.
  */
 import { splitAmount } from '@/shared/money';
 
